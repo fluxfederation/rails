@@ -1,3 +1,23 @@
+*   Fix regression when using `ActionView::Helpers::TranslationHelper#translate` with
+    `options[:raise]`.
+
+    This regression was introduced at ec16ba75a5493b9da972eea08bae630eba35b62f.
+
+    *Shota Fukumori (sora_h)*
+
+## Rails 3.2.17 (Feb 18, 2014) ##
+
+*   Use the reference for the mime type to get the format
+
+    Fixes: CVE-2014-0082
+
+*   Escape format, negative_format and units options of number helpers
+
+    Fixes: CVE-2014-0081
+
+
+## Rails 3.2.16 (Dec 12, 2013) ##
+
 *   Deep Munge the parameters for GET and POST Fixes CVE-2013-6417
 
 *   Stop using i18n's built in HTML error handling.  Fixes: CVE-2013-4491
