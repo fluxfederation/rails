@@ -869,8 +869,10 @@ module ActiveRecord
       # Reorder bind indexes if joins produced bind values
       bvs = arel.bind_values + bind_values
       arel.ast.grep(Arel::Nodes::BindParam).each_with_index do |bp, i|
-        column = bvs[i].first
-        bp.replace connection.substitute_at(column, i)
+        if bvs[i]
+          column = bvs[i].first
+          bp.replace connection.substitute_at(column, i)
+        end
       end
 
       arel

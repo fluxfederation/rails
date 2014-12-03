@@ -382,6 +382,13 @@ class HasManyAssociationsTest < ActiveRecord::TestCase
     assert_equal "Summit", Firm.all.merge!(:order => "id").first.clients_using_primary_key.first.name
   end
 
+  def test_update_all_on_association_accessed_before_save
+    firm = Firm.new(name: 'Firm')
+    firm.clients << Client.first
+    firm.save!
+    assert_equal firm.clients.count, firm.clients.update_all(description: 'Great!')
+  end
+
   def test_belongs_to_sanity
     c = Client.new
     assert_nil c.firm, "belongs_to failed sanity check on new object"
@@ -1841,6 +1848,14 @@ class HasManyAssociationsTest < ActiveRecord::TestCase
 
     assert_equal [bulb1], car.bulbs
     assert_equal [bulb1, bulb2], car.all_bulbs.sort_by(&:id)
+  end
+
+  test 'unscopes the default scope of associated model when used with include' do
+    car = Car.create!
+    bulb = Bulb.create! name: "other", car: car
+
+    assert_equal bulb, Car.find(car.id).all_bulbs.first
+    assert_equal bulb, Car.includes(:all_bulbs).find(car.id).all_bulbs.first
   end
 
   test "raises RecordNotDestroyed when replaced child can't be destroyed" do

@@ -1,3 +1,35 @@
+*   Renaming a table in pg also renames the primary key index.
+
+    Fixes #12856
+
+    *Sean Griffin*
+
+*   Make it possible to access fixtures excluded by a `default_scope`.
+
+    *Yves Senn*
+
+*   `timestamps` and `add_timestamps` passes additional options along.
+    (like `null: false`)
+
+    Closes #17624.
+
+    *Yves Senn*
+
+
+## Rails 4.1.8 (November 16, 2014) ##
+
+*   Cache `CollectionAssociation#reader` proxies separately before and after
+    the owner has been saved so that the proxy is not cached without the
+    owner's id.
+
+    *Ben Woosley*
+
+*   Fix preloading of associations which unscope a default scope.
+
+    Fixes #11036.
+
+    *Byron Bischoff*
+
 *   Do not use `RENAME INDEX` syntax for MariaDB 10.0.
 
     Fixes #15931.
@@ -34,6 +66,16 @@
     Fixes #16128.
 
     *Agis Anastasopoulos*
+
+
+## Rails 4.1.7.1 (November 19, 2014) ##
+
+*   No changes.
+
+
+## Rails 4.1.7 (October 29, 2014) ##
+
+*   No changes.
 
 
 ## Rails 4.1.6 (September 11, 2014) ##

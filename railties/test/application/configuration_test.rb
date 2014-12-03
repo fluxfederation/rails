@@ -289,6 +289,51 @@ module ApplicationTests
       assert_equal 'some_value', verifier.verify(message)
     end
 
+    test "application message verifier can be used when the key_generator is ActiveSupport::LegacyKeyGenerator" do
+      app_file 'config/initializers/secret_token.rb', <<-RUBY
+        Rails.application.config.secret_token = "b3c631c314c0bbca50c1b2843150fe33"
+      RUBY
+      app_file 'config/secrets.yml', <<-YAML
+        development:
+          secret_key_base:
+      YAML
+      require "#{app_path}/config/environment"
+
+
+      assert_equal app.env_config['action_dispatch.key_generator'], Rails.application.key_generator
+      assert_equal app.env_config['action_dispatch.key_generator'].class, ActiveSupport::LegacyKeyGenerator
+      message = app.message_verifier(:sensitive_value).generate("some_value")
+      assert_equal 'some_value', Rails.application.message_verifier(:sensitive_value).verify(message)
+    end
+
+    test "warns when secrets.secret_key_base is blank and config.secret_token is set" do
+      app_file 'config/initializers/secret_token.rb', <<-RUBY
+        Rails.application.config.secret_token = "b3c631c314c0bbca50c1b2843150fe33"
+      RUBY
+      app_file 'config/secrets.yml', <<-YAML
+        development:
+          secret_key_base:
+      YAML
+      require "#{app_path}/config/environment"
+
+      assert_deprecated(/You didn't set `secret_key_base`./) do
+        app.env_config
+      end
+    end
+
+    test "prefer secrets.secret_token over config.secret_token" do
+      app_file 'config/initializers/secret_token.rb', <<-RUBY
+        Rails.application.config.secret_token = ""
+      RUBY
+      app_file 'config/secrets.yml', <<-YAML
+        development:
+          secret_token: 3b7cd727ee24e8444053437c36cc66c3
+      YAML
+      require "#{app_path}/config/environment"
+
+      assert_equal '3b7cd727ee24e8444053437c36cc66c3', app.secrets.secret_token
+    end
+
     test "application verifier can build different verifiers" do
       make_basic_app do |app|
         app.secrets.secret_key_base = 'b3c631c314c0bbca50c1b2843150fe33'
@@ -329,6 +374,21 @@ module ApplicationTests
       assert_equal '3b7cd727ee24e8444053437c36cc66c3', app.secrets.secret_key_base
     end
 
+    test "config.secret_token over-writes a blank secrets.secret_token" do
+      app_file 'config/initializers/secret_token.rb', <<-RUBY
+        Rails.application.config.secret_token = "b3c631c314c0bbca50c1b2843150fe33"
+      RUBY
+      app_file 'config/secrets.yml', <<-YAML
+        development:
+          secret_key_base:
+          secret_token:
+      YAML
+      require "#{app_path}/config/environment"
+
+      assert_equal 'b3c631c314c0bbca50c1b2843150fe33', app.secrets.secret_token
+      assert_equal 'b3c631c314c0bbca50c1b2843150fe33', app.config.secret_token
+    end
+
     test "custom secrets saved in config/secrets.yml are loaded in app secrets" do
       app_file 'config/secrets.yml', <<-YAML
         development:
@@ -350,6 +410,51 @@ module ApplicationTests
       assert_nil app.secrets.not_defined
     end
 
+    test "config.secret_key_base over-writes a blank secrets.secret_key_base" do
+      app_file 'config/initializers/secret_token.rb', <<-RUBY
+        Rails.application.config.secret_key_base = "iaminallyoursecretkeybase"
+      RUBY
+      app_file 'config/secrets.yml', <<-YAML
+        development:
+          secret_key_base:
+      YAML
+      require "#{app_path}/config/environment"
+
+      assert_equal "iaminallyoursecretkeybase", app.secrets.secret_key_base
+    end
+
+    test "uses ActiveSupport::LegacyKeyGenerator as app.key_generator when secrets.secret_key_base is blank" do
+      app_file 'config/initializers/secret_token.rb', <<-RUBY
+        Rails.application.config.secret_token = "b3c631c314c0bbca50c1b2843150fe33"
+      RUBY
+      app_file 'config/secrets.yml', <<-YAML
+        development:
+          secret_key_base:
+      YAML
+      require "#{app_path}/config/environment"
+
+      assert_equal 'b3c631c314c0bbca50c1b2843150fe33', app.config.secret_token
+      assert_equal nil, app.secrets.secret_key_base
+      assert_equal app.key_generator.class, ActiveSupport::LegacyKeyGenerator
+    end
+
+    test "uses ActiveSupport::LegacyKeyGenerator with config.secret_token as app.key_generator when secrets.secret_key_base is blank" do
+      app_file 'config/initializers/secret_token.rb', <<-RUBY
+        Rails.application.config.secret_token = ""
+      RUBY
+      app_file 'config/secrets.yml', <<-YAML
+        development:
+          secret_key_base:
+      YAML
+      require "#{app_path}/config/environment"
+
+      assert_equal '', app.config.secret_token
+      assert_equal nil, app.secrets.secret_key_base
+      assert_raise ArgumentError, /\AA secret is required/ do
+        app.key_generator
+      end
+    end
+
     test "protect from forgery is the default in a new app" do
       make_basic_app
 
@@ -361,6 +466,45 @@ module ApplicationTests
 
       get "/"
       assert last_response.body =~ /csrf\-param/
+    end
+
+    test "default form builder specified as a string" do
+
+      app_file 'config/initializers/form_builder.rb', <<-RUBY
+      class CustomFormBuilder < ActionView::Helpers::FormBuilder
+        def text_field(attribute, *args)
+          label(attribute) + super(attribute, *args)
+        end
+      end
+      Rails.configuration.action_view.default_form_builder = "CustomFormBuilder"
+      RUBY
+
+      app_file 'app/models/post.rb', <<-RUBY
+      class Post
+        include ActiveModel::Model
+        attr_accessor :name
+      end
+      RUBY
+
+
+      app_file 'app/controllers/posts_controller.rb', <<-RUBY
+      class PostsController < ApplicationController
+        def index
+          render inline: "<%= begin; form_for(Post.new) {|f| f.text_field(:name)}; rescue => e; e.to_s; end %>"
+        end
+      end
+      RUBY
+
+      add_to_config <<-RUBY
+        routes.prepend do
+          resources :posts
+        end
+      RUBY
+
+      require "#{app_path}/config/environment"
+
+      get "/posts"
+      assert_match(/label/, last_response.body)
     end
 
     test "default method for update can be changed" do
