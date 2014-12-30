@@ -195,7 +195,6 @@ module ActionView
 
     def initialize(view_paths, details = {}, prefixes = [])
       @details, @details_key = {}, nil
-      @skip_default_locale = false
       @cache = true
       @prefixes = prefixes
       @rendered_format = nil
@@ -217,12 +216,6 @@ module ActionView
       super(values)
     end
 
-    # Do not use the default locale on template lookup.
-    def skip_default_locale!
-      @skip_default_locale = true
-      self.locale = nil
-    end
-
     # Override locale to return a symbol instead of array.
     def locale
       @details[:locale].first
@@ -237,7 +230,7 @@ module ActionView
         config.locale = value
       end
 
-      super(@skip_default_locale ? I18n.locale : default_locale)
+      super(default_locale)
     end
 
     # Uses the first format in the formats array for layout lookup.

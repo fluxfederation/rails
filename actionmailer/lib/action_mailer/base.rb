@@ -591,8 +591,6 @@ module ActionMailer
       }
 
       ActiveSupport::Notifications.instrument("process.action_mailer", payload) do
-        lookup_context.skip_default_locale!
-
         super
         @_message = NullMail.new unless @_mail_was_called
       end
