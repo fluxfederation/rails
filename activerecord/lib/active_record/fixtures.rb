@@ -532,12 +532,10 @@ module ActiveRecord
                   conn.insert_fixture(row, fixture_set_name)
                 end
               end
-            end
 
-            # Cap primary key sequences to max(pk).
-            if connection.respond_to?(:reset_pk_sequence!)
-              fixture_sets.each do |fs|
-                connection.reset_pk_sequence!(fs.table_name)
+              # Cap primary key sequences to max(pk).
+              if conn.respond_to?(:reset_pk_sequence!)
+                conn.reset_pk_sequence!(fs.table_name)
               end
             end
           end
@@ -691,6 +689,10 @@ module ActiveRecord
 
       def lhs_key
         @association.through_reflection.foreign_key
+      end
+
+      def join_table
+        @association.through_reflection.table_name
       end
     end
 

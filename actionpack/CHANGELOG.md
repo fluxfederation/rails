@@ -1,3 +1,69 @@
+*   Fix handling of empty X_FORWARDED_HOST header in raw_host_with_port
+
+    Previously, an empty X_FORWARDED_HOST header would cause
+    Actiondispatch::Http:URL.raw_host_with_port to return nil, causing
+    Actiondispatch::Http:URL.host to raise a NoMethodError.
+
+    *Adam Forsyth*
+
+*   Fix regression in functional tests. Responses should have default headers
+    assigned.
+
+    See #18423.
+
+    *Jeremy Kemper*, *Yves Senn*
+
+
+## Rails 4.1.11 (June 16, 2015) ##
+
+*   No changes.
+
+
+## Rails 4.1.10 (March 19, 2015) ##
+
+*   Preserve default format when generating URLs
+
+    Fixes an issue that would cause the format set in default_url_options to be
+    lost when generating URLs with fewer positional arguments than parameters in
+    the route definition.
+
+    Backport of #18627
+
+    *Tekin Suleyman*, *Dominic Baggott*
+
+*   Default headers, removed in controller actions, are no longer reapplied on
+    the test response.
+
+    *Jonas Baumann*
+
+*   Ensure `append_info_to_payload` is called even if an exception is raised.
+
+    Fixes an issue where when an exception is raised in the request the additonal
+    payload data is not available.
+
+    See:
+    * #14903
+    * https://github.com/roidrage/lograge/issues/37
+
+    *Dieter Komendera*, *Margus Pärt*
+
+
+## Rails 4.1.9 (January 6, 2015) ##
+
+*   Fixed handling of positional url helper arguments when `format: false`.
+
+    Fixes #17819.
+
+    *Andrew White*, *Tatiana Soukiassian*
+
+*   Restore handling of a bare `Authorization` header, without `token=`
+    prefix.
+
+    Fixes #17108.
+
+    *Guo Xiang Tan*
+
+
 ## Rails 4.1.8 (November 16, 2014) ##
 
 *   Fix regression where path was getting overwritten when route anchor was false, and X-Cascade pass

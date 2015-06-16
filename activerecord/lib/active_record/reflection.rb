@@ -146,7 +146,7 @@ module ActiveRecord
         @scope         = scope
         @options       = options
         @active_record = active_record
-        @klass         = options[:class]
+        @klass         = options[:anonymous_class]
         @plural_name   = active_record.pluralize_table_names ?
                             name.to_s.pluralize : name.to_s
       end
@@ -432,7 +432,7 @@ module ActiveRecord
         # returns either nil or the inverse association name that it finds.
         def automatic_inverse_of
           if can_find_inverse_of_automatically?(self)
-            inverse_name = ActiveSupport::Inflector.underscore(options[:as] || active_record.name).to_sym
+            inverse_name = ActiveSupport::Inflector.underscore(options[:as] || active_record.name.demodulize).to_sym
 
             begin
               reflection = klass._reflect_on_association(inverse_name)
@@ -534,7 +534,9 @@ module ActiveRecord
       #   # => <ActiveRecord::Reflection::AssociationReflection: @macro=:belongs_to, @name=:tag, @active_record=Tagging, @plural_name="tags">
       #
       def source_reflection
-        through_reflection.klass._reflect_on_association(source_reflection_name)
+        if source_reflection_name
+          through_reflection.klass._reflect_on_association(source_reflection_name)
+        end
       end
 
       # Returns the AssociationReflection object specified in the <tt>:through</tt> option
@@ -609,8 +611,11 @@ module ActiveRecord
           through_scope_chain = through_reflection.scope_chain.map(&:dup)
 
           if options[:source_type]
-            through_scope_chain.first <<
-              through_reflection.klass.where(foreign_type => options[:source_type])
+            type = foreign_type
+            source_type = options[:source_type]
+            through_scope_chain.first << lambda { |object|
+              where(type => source_type)
+            }
           end
 
           # Recursively fill out the rest of the array from the through reflection

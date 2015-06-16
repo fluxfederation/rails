@@ -1,3 +1,53 @@
+*   `translate` should handle `raise` flag correctly in case of both main and default
+    translation is missing.
+
+    Fixes #19967
+
+    *Bernard Potocki*
+
+*   `translate` should accept nils as members of the `:default`
+    parameter without raising a translation missing error.  Fixes a
+    regression introduced 362557e.
+
+    Fixes #19419
+
+    *Justin Coyne*
+
+*   `number_to_percentage` does not crash with `Float::NAN` or `Float::INFINITY`
+    as input when `precision: 0` is used.
+
+    Fixes #19227.
+
+    *Yves Senn*
+
+
+## Rails 4.1.11 (June 16, 2015) ##
+
+*   No changes.
+
+
+## Rails 4.1.10 (March 19, 2015) ##
+
+*   Local variable in a partial is now available even if a falsy value is
+    passed to `:object` when rendering a partial.
+
+    Fixes #17373.
+
+    *Agis Anastasopoulos*
+
+*   Default translations that have a lower precidence than an html safe default,
+    but are not themselves safe, should not be marked as html_safe.
+
+    *Justin Coyne*
+
+## Rails 4.1.9 (January 6, 2015) ##
+
+*   Added an explicit error message, in `ActionView::PartialRenderer`
+    for partial `rendering`, when the value of option `as` has invalid characters.
+
+    *Angelo Capilleri*
+
+
 ## Rails 4.1.8 (November 16, 2014) ##
 
 *   Update `select_tag` to work correctly with `:include_blank` option passing a string.

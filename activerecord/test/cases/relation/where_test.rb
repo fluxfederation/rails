@@ -1,15 +1,20 @@
 require "cases/helper"
-require 'models/author'
-require 'models/price_estimate'
-require 'models/treasure'
-require 'models/post'
-require 'models/comment'
-require 'models/edge'
-require 'models/topic'
+require "models/author"
+require "models/binary"
+require "models/cake_designer"
+require "models/chef"
+require "models/comment"
+require "models/edge"
+require "models/essay"
+require "models/post"
+require "models/price_estimate"
+require "models/topic"
+require "models/treasure"
+require "models/vertex"
 
 module ActiveRecord
   class WhereTest < ActiveRecord::TestCase
-    fixtures :posts, :edges, :authors
+    fixtures :posts, :edges, :authors, :binaries, :essays
 
     def test_where_copies_bind_params
       author = authors(:david)
@@ -89,6 +94,18 @@ module ActiveRecord
       actual   = PriceEstimate.where(estimate_of: [treasure, hidden])
 
       assert_equal expected.to_sql, actual.to_sql
+    end
+
+    def test_polymorphic_empty_array_where
+      treasure = Treasure.new
+      treasure.id = 1
+      hidden = HiddenTreasure.new
+      hidden.id = 2
+
+      expected = PriceEstimate.where("1=0")
+      actual   = PriceEstimate.where(estimate_of: [])
+
+      assert_equal expected.to_a, actual.to_a
     end
 
     def test_polymorphic_nested_relation_where
@@ -187,6 +204,41 @@ module ActiveRecord
       [[], {}, nil, ""].each do |blank|
         assert_equal 4, Edge.where(blank).order("sink_id").to_a.size
       end
+    end
+
+    def test_where_on_association_with_custom_primary_key
+      author = authors(:david)
+      essay = Essay.where(writer: author).first
+
+      assert_equal essays(:david_modest_proposal), essay
+    end
+
+    def test_where_on_association_with_custom_primary_key_with_relation
+      author = authors(:david)
+      essay = Essay.where(writer: Author.where(id: author.id)).first
+
+      assert_equal essays(:david_modest_proposal), essay
+    end
+
+    def test_where_on_association_with_relation_performs_subselect_not_two_queries
+      author = authors(:david)
+
+      assert_queries(1) do
+        Essay.where(writer: Author.where(id: author.id)).to_a
+      end
+    end
+
+    def test_where_on_association_with_custom_primary_key_with_array_of_base
+      author = authors(:david)
+      essay = Essay.where(writer: [author]).first
+
+      assert_equal essays(:david_modest_proposal), essay
+    end
+
+    def test_where_on_association_with_custom_primary_key_with_array_of_ids
+      essay = Essay.where(writer: ["David"]).first
+
+      assert_equal essays(:david_modest_proposal), essay
     end
   end
 end

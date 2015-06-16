@@ -24,12 +24,13 @@ require 'models/categorization'
 require 'models/member'
 require 'models/membership'
 require 'models/club'
+require 'models/organization'
 
 class HasManyThroughAssociationsTest < ActiveRecord::TestCase
   fixtures :posts, :readers, :people, :comments, :authors, :categories, :taggings, :tags,
            :owners, :pets, :toys, :jobs, :references, :companies, :members, :author_addresses,
            :subscribers, :books, :subscriptions, :developers, :categorizations, :essays,
-           :categories_posts, :clubs, :memberships
+           :categories_posts, :clubs, :memberships, :organizations
 
   # Dummies to force column loads so query counts are clean.
   def setup
@@ -82,11 +83,11 @@ class HasManyThroughAssociationsTest < ActiveRecord::TestCase
     subscriber   = make_model "Subscriber"
 
     subscriber.primary_key = 'nick'
-    subscription.belongs_to :book,       class: book
-    subscription.belongs_to :subscriber, class: subscriber
+    subscription.belongs_to :book,       anonymous_class: book
+    subscription.belongs_to :subscriber, anonymous_class: subscriber
 
-    book.has_many :subscriptions, class: subscription
-    book.has_many :subscribers, through: :subscriptions, class: subscriber
+    book.has_many :subscriptions, anonymous_class: subscription
+    book.has_many :subscribers, through: :subscriptions, anonymous_class: subscriber
 
     anonbook = book.first
     namebook = Book.find anonbook.id
@@ -152,10 +153,10 @@ class HasManyThroughAssociationsTest < ActiveRecord::TestCase
     lesson_student = make_model 'LessonStudent'
     lesson_student.table_name = 'lessons_students'
 
-    lesson_student.belongs_to :lesson, :class => lesson
-    lesson_student.belongs_to :student, :class => student
-    lesson.has_many :lesson_students, :class => lesson_student
-    lesson.has_many :students, :through => :lesson_students, :class => student
+    lesson_student.belongs_to :lesson, :anonymous_class => lesson
+    lesson_student.belongs_to :student, :anonymous_class => student
+    lesson.has_many :lesson_students, :anonymous_class => lesson_student
+    lesson.has_many :students, :through => :lesson_students, :anonymous_class => student
     [lesson, lesson_student, student]
   end
 
@@ -382,6 +383,12 @@ class HasManyThroughAssociationsTest < ActiveRecord::TestCase
   def test_should_raise_exception_for_destroying_mismatching_records
     assert_no_difference ["Person.count", "Reader.count"] do
       assert_raise(ActiveRecord::AssociationTypeMismatch) { posts(:welcome).people.destroy(posts(:thinking)) }
+    end
+  end
+
+  def test_should_raise_exception_for_association_not_found
+    assert_raise(ActiveRecord::HasManyThroughSourceAssociationNotFoundError) do
+      posts(:welcome).author_toys
     end
   end
 
@@ -1149,5 +1156,70 @@ class HasManyThroughAssociationsTest < ActiveRecord::TestCase
 
     club.members << member
     assert_equal 1, SuperMembership.where(member_id: member.id, club_id: club.id).count
+  end
+
+  def test_build_for_has_many_through_association
+    organization = organizations(:nsa)
+    author = organization.author
+    post_direct = author.posts.build
+    post_through = organization.posts.build
+    assert_equal post_direct.author_id, post_through.author_id
+  end
+end
+
+class NonTransactionalHMTAssociationsTest < ActiveRecord::TestCase
+  self.use_transactional_fixtures = false
+
+  class Shout < ActiveRecord::Base
+    self.table_name = "test_poly_shouts"
+
+    belongs_to :account
+    belongs_to :content, :polymorphic => true
+  end
+
+  class TextShout < ActiveRecord::Base
+    self.table_name = "test_poly_text_shouts"
+  end
+
+  class PictureShout < ActiveRecord::Base
+    self.table_name = "test_poly_picture_shouts"
+  end
+
+  class Account < ActiveRecord::Base
+    self.table_name = "test_poly_accounts"
+    has_many :shouts
+    has_many :text_shouts, :through => :shouts, :source => :content, :source_type => TextShout
+    has_many :picture_shouts, :through => :shouts, :source => :content, :source_type => PictureShout
+  end
+
+  def test_eager_load_polymorphic_nested_associations
+    @connection = ActiveRecord::Base.connection
+    @connection.create_table(:test_poly_accounts, force: true)
+    @connection.create_table(:test_poly_shouts, force: true) do |t|
+      t.references :account
+      t.references :content, polymorphic: true
+    end
+    @connection.create_table(:test_poly_text_shouts, force: true) do |t|
+      t.text :text
+    end
+    @connection.create_table(:test_poly_picture_shouts, force: true) do |t|
+      t.text :url
+    end
+
+    account = Account.create!
+
+    text_shout = TextShout.new(:text => "Hello")
+    picture_shout = PictureShout.new(:url => "some url")
+
+    account.shouts.create! :content => text_shout
+    account.shouts.create! :content => picture_shout
+
+    assert_includes Account.eager_load(:text_shouts, :picture_shouts).where("test_poly_text_shouts.text like '%Hello%'"), account
+    assert_includes Account.eager_load(:text_shouts, :picture_shouts).where("test_poly_picture_shouts.url like '%some%'"), account
+  ensure
+    @connection.execute("DROP TABLE IF EXISTS test_poly_accounts")
+    @connection.execute("DROP TABLE IF EXISTS test_poly_shouts")
+    @connection.execute("DROP TABLE IF EXISTS test_poly_text_shouts")
+    @connection.execute("DROP TABLE IF EXISTS test_poly_picture_shouts")
   end
 end

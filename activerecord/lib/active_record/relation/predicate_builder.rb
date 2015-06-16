@@ -61,6 +61,11 @@ module ActiveRecord
         end
 
         column = reflection.foreign_key
+
+        if base_class
+          primary_key = reflection.association_primary_key(base_class)
+          value = convert_value_to_association_ids(value, primary_key)
+        end
       end
 
       queries << build(table[column], value)
@@ -114,12 +119,28 @@ module ActiveRecord
     register_handler(Array, ArrayHandler.new)
 
     private
-      def self.build(attribute, value)
-        handler_for(value).call(attribute, value)
-      end
 
-      def self.handler_for(object)
-        @handlers.detect { |klass, _| klass === object }.last
+    def self.build(attribute, value)
+      handler_for(value).call(attribute, value)
+    end
+    private_class_method :build
+
+    def self.handler_for(object)
+      @handlers.detect { |klass, _| klass === object }.last
+    end
+    private_class_method :handler_for
+
+    def self.convert_value_to_association_ids(value, primary_key)
+      case value
+      when Relation
+        value.select(primary_key)
+      when Array
+        value.map { |v| convert_value_to_association_ids(v, primary_key) }
+      when Base
+        value.read_attribute(primary_key)
+      else
+        value
       end
+    end
   end
 end

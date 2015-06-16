@@ -1,3 +1,54 @@
+*   Add support for inline images in mailer previews by using an interceptor
+    class to convert cid: urls in image src attributes to data urls. The
+    interceptor is not enabled by default but can be done in an initializer:
+
+        # config/initializer/preview_interceptors.rb
+        ActionMailer::Base.register_preview_interceptor(ActionMailer::InlinePreviewInterceptor)
+
+    *Andrew White*
+
+*   Fix mailer previews with attachments by using the mail gem's own API to
+    locate the first part of the correct mime type.
+
+    Fixes #14435.
+
+    *Andrew White*
+
+
+## Rails 4.1.11 (June 16, 2015) ##
+
+*   No changes.
+
+
+## Rails 4.1.10 (March 19, 2015) ##
+
+*   Add a new-line to the end of route method generated code.
+
+    We need to add a `\n`, because we cannot have two routes
+    in the same line.
+
+    *arthurnn*
+
+*   Force generated routes to be inserted into routes.rb
+
+    *Andrew White*
+
+*   Don't remove all line endings from routes.rb when revoking scaffold.
+
+    Fixes #15913.
+
+    *Andrew White*
+
+*   Fix scaffold generator with `--helper=false` option.
+
+    *Rafael Mendonça França*
+
+
+## Rails 4.1.9 (January 6, 2015) ##
+
+*   No changes.
+
+
 ## Rails 4.1.8 (November 16, 2014) ##
 
 *   `secret_token` is now saved in `Rails.application.secrets.secret_token`

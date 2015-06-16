@@ -1,5 +1,13 @@
 require 'abstract_unit'
 
+module I18n
+  class CustomExceptionHandler
+    def self.call(exception, locale, key, options)
+      'from CustomExceptionHandler'
+    end
+  end
+end
+
 class TranslationHelperTest < ActiveSupport::TestCase
   include ActionView::Helpers::TranslationHelper
 
@@ -68,6 +76,22 @@ class TranslationHelperTest < ActiveSupport::TestCase
     end
   end
 
+  def test_uses_custom_exception_handler_when_specified
+    old_exception_handler = I18n.exception_handler
+    I18n.exception_handler = I18n::CustomExceptionHandler
+    assert_equal 'from CustomExceptionHandler', translate(:"translations.missing", raise: false)
+  ensure
+    I18n.exception_handler = old_exception_handler
+  end
+
+  def test_uses_custom_exception_handler_when_specified_for_html
+    old_exception_handler = I18n.exception_handler
+    I18n.exception_handler = I18n::CustomExceptionHandler
+    assert_equal 'from CustomExceptionHandler', translate(:"translations.missing_html", raise: false)
+  ensure
+    I18n.exception_handler = old_exception_handler
+  end
+
   def test_i18n_translate_defaults_to_nil_rescue_format
     expected = 'translation missing: en.translations.missing'
     assert_equal expected, I18n.translate(:"translations.missing")
@@ -129,6 +153,19 @@ class TranslationHelperTest < ActiveSupport::TestCase
     assert_equal true, translation.html_safe?
   end
 
+  def test_translate_with_missing_default
+    translation = translate(:'translations.missing', :default => :'translations.missing_html')
+    expected = '<span class="translation_missing" title="translation missing: en.translations.missing_html">Missing Html</span>'
+    assert_equal expected, translation
+    assert_equal true, translation.html_safe?
+  end
+
+  def test_translate_with_missing_default_and_raise_option
+    assert_raise(I18n::MissingTranslationData) do
+      translate(:'translations.missing', :default => :'translations.missing_html', :raise => true)
+    end
+  end
+
   def test_translate_with_two_defaults_named_html
     translation = translate(:'translations.missing', :default => [:'translations.missing_html', :'translations.hello_html'])
     assert_equal '<a>Hello World</a>', translation
@@ -141,13 +178,29 @@ class TranslationHelperTest < ActiveSupport::TestCase
     assert_equal true, translation.html_safe?
   end
 
+  def test_translate_with_last_default_not_named_html
+    translation = translate(:'translations.missing', :default => [:'translations.missing_html', :'translations.foo'])
+    assert_equal 'Foo', translation
+    assert_equal false, translation.html_safe?
+  end
+
   def test_translate_with_string_default
     translation = translate(:'translations.missing', default: 'A Generic String')
     assert_equal 'A Generic String', translation
   end
 
+  def test_translate_with_object_default
+    translation = translate(:'translations.missing', default: 123)
+    assert_equal 123, translation
+  end
+
   def test_translate_with_array_of_string_defaults
     translation = translate(:'translations.missing', default: ['A Generic String', 'Second generic string'])
+    assert_equal 'A Generic String', translation
+  end
+
+  def test_translate_with_array_of_defaults_with_nil
+    translation = translate(:'translations.missing', default: [:'also_missing', nil, 'A Generic String'])
     assert_equal 'A Generic String', translation
   end
 end

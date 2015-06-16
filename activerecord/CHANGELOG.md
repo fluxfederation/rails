@@ -1,3 +1,104 @@
+*   Raises the right exception when declares a has many through
+    association with missing source.
+
+    *Mauro George*
+
+*   Revert behavior of `db:schema:load` back to loading the full
+    environment. This ensures that initializers are run.
+
+    Fixes #19545.
+
+    *Yves Senn*
+
+*   Rename `:class` to `:anonymous_class` in association options.
+
+    Fixes #19659.
+
+    *Andrew White*
+
+*   Fix referencing wrong table aliases while joining tables of has many through
+    association (only when calling calculation methods).
+
+    Fixes #19276.
+
+    *pinglamb*
+
+
+## Rails 4.1.11 (June 16, 2015) ##
+
+*   No changes.
+
+
+## Rails 4.1.10 (March 19, 2015) ##
+
+*   Fixed ActiveRecord::Relation#becomes! and changed_attributes issues for type column
+
+    Fixes #17139.
+
+    *Miklos Fazekas*
+
+*   A `NullRelation` should represent nothing. This fixes a bug where
+    `Comment.where(post_id: Post.none)` returned a non-empty result.
+
+    Closes #15176.
+
+    *Matthew Draper*, *Yves Senn*
+
+*   Respect custom primary keys for associations when calling `Relation#where`
+
+    Fixes #18813.
+
+    *Sean Griffin*
+
+*   Fixed ActiveRecord::Relation#group method when argument is SQL reserved key word:
+
+      SplitTest.group(:key).count
+      Property.group(:value).count
+
+    *Bogdan Gusiev*
+
+*   Fixed setting of foreign_key for through associations while building of new record.
+
+    Fixes #12698.
+
+    *Ivan Antropov*
+
+*   Fixed automatic inverse_of for models nested in module.
+
+    *Andrew McCloud*
+
+*   Fix `reaping_frequency` option when the value is a string.
+
+    This usually happens when it is configured using `DATABASE_URL`.
+
+    *korbin*
+
+
+## Rails 4.1.9 (January 6, 2015) ##
+
+*   `db:schema:load` and `db:structure:load` no longer purge the database
+    before loading the schema. This is left for the user to do.
+    `db:test:prepare` will still purge the database.
+
+    Closes #17945.
+
+    *Yves Senn*
+
+*   Bring back `db:test:prepare` to synchronize the test database schema.
+
+    Manual synchronization using `bin/rake db:test:prepare` is required
+    when a migration is rolled-back, edited and reapplied.
+
+    `ActiveRecord::Base.maintain_test_schema` now uses `db:test:prepare`
+    to synchronize the schema. Plugins can use this task as a hook to
+    provide custom behavior after the schema has been loaded.
+
+    NOTE: `test:prepare` runs before the schema was synchronized.
+
+    Fixes #17171, #15787.
+
+    *Yves Senn*
+
 *   Renaming a table in pg also renames the primary key index.
 
     Fixes #12856

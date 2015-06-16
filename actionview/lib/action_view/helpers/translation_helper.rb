@@ -35,15 +35,23 @@ module ActionView
       # naming convention helps to identify translations that include HTML tags so that
       # you know what kind of output to expect when you call translate in a template.
       def translate(key, options = {})
-        options[:default] = wrap_translate_defaults(options[:default]) if options[:default]
+        options = options.dup
+        has_default = options.has_key?(:default)
+        remaining_defaults = Array(options.delete(:default)).compact
 
-        # If the user has specified rescue_format then pass it all through, otherwise use
-        # raise and do the work ourselves
-        options[:raise] ||= ActionView::Base.raise_on_missing_translations
+        if has_default && !remaining_defaults.first.kind_of?(Symbol)
+          options[:default] = remaining_defaults.shift
+        end
 
-        raise_error = options[:raise] || options.key?(:rescue_format)
-        unless raise_error
-          options[:raise] = true
+        # If the user has explicitly decided to NOT raise errors, pass that option to I18n.
+        # Otherwise, tell I18n to raise an exception, which we rescue further in this method.
+        # Note: `raise_error` refers to us re-raising the error in this method. I18n is forced to raise by default.
+        if options[:raise] == false || (options.key?(:rescue_format) && options[:rescue_format].nil?)
+          raise_error = false
+          i18n_raise = false
+        else
+          raise_error = options[:raise] || options[:rescue_format] || ActionView::Base.raise_on_missing_translations
+          i18n_raise = true
         end
 
         if html_safe_translation_key?(key)
@@ -53,17 +61,21 @@ module ActionView
               html_safe_options[name] = ERB::Util.html_escape(value.to_s)
             end
           end
-          translation = I18n.translate(scope_key_by_partial(key), html_safe_options)
+          translation = I18n.translate(scope_key_by_partial(key), html_safe_options.merge(raise: i18n_raise))
 
           translation.respond_to?(:html_safe) ? translation.html_safe : translation
         else
-          I18n.translate(scope_key_by_partial(key), options)
+          I18n.translate(scope_key_by_partial(key), options.merge(raise: i18n_raise))
         end
       rescue I18n::MissingTranslationData => e
-        raise e if raise_error
+        if remaining_defaults.present?
+          translate remaining_defaults.shift, options.merge(default: remaining_defaults)
+        else
+          raise e if raise_error
 
-        keys = I18n.normalize_keys(e.locale, e.key, e.options[:scope])
-        content_tag('span', keys.last.to_s.titleize, :class => 'translation_missing', :title => "translation missing: #{keys.join('.')}")
+          keys = I18n.normalize_keys(e.locale, e.key, e.options[:scope])
+          content_tag('span', keys.last.to_s.titleize, :class => 'translation_missing', :title => "translation missing: #{keys.join('.')}")
+        end
       end
       alias :t :translate
 
@@ -91,21 +103,6 @@ module ActionView
 
         def html_safe_translation_key?(key)
           key.to_s =~ /(\b|_|\.)html$/
-        end
-
-        def wrap_translate_defaults(defaults)
-          new_defaults = []
-          defaults     = Array(defaults)
-          while key = defaults.shift
-            if key.is_a?(Symbol)
-              new_defaults << lambda { |_, options| translate key, options.merge(:default => defaults) }
-              break
-            else
-              new_defaults << key
-            end
-          end
-
-          new_defaults
         end
     end
   end

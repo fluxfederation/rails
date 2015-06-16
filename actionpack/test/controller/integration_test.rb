@@ -279,6 +279,11 @@ class IntegrationProcessTest < ActionDispatch::IntegrationTest
     def redirect
       redirect_to action_url('get')
     end
+
+    def remove_header
+      response.headers.delete params[:header]
+      head :ok, 'c' => '3'
+    end
   end
 
   def test_get
@@ -506,7 +511,27 @@ class IntegrationProcessTest < ActionDispatch::IntegrationTest
     end
   end
 
+  def test_respect_removal_of_default_headers_by_a_controller_action
+    with_test_route_set do
+      with_default_headers 'a' => '1', 'b' => '2' do
+        get '/remove_header', header: 'a'
+      end
+    end
+
+    assert_not_includes @response.headers, 'a', 'Response should not include default header removed by the controller action'
+    assert_includes @response.headers, 'b'
+    assert_includes @response.headers, 'c'
+  end
+
   private
+    def with_default_headers(headers)
+      original = ActionDispatch::Response.default_headers
+      ActionDispatch::Response.default_headers = headers
+      yield
+    ensure
+      ActionDispatch::Response.default_headers = original
+    end
+
     def with_test_route_set
       with_routing do |set|
         controller = ::IntegrationProcessTest::IntegrationController.clone

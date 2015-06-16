@@ -12,6 +12,8 @@ gem 'jquery-rails', '~> 3.1.0'
 gem 'turbolinks'
 gem 'coffee-rails', '~> 4.0.0'
 
+gem 'sprockets', '~> 3.0.0.rc.1'
+
 # require: false so bcrypt is loaded only when has_secure_password is used.
 # This is to avoid ActiveModel (and by extension the entire framework)
 # being dependent on a binary library.
@@ -25,7 +27,8 @@ group :doc do
   gem 'sdoc', '~> 0.4.0'
   gem 'redcarpet', '~> 2.2.2', platforms: :ruby
   gem 'w3c_validators'
-  gem 'kindlerb'
+  gem 'kindlerb', '0.1.1'
+  gem 'mustache', '~> 0.99.8'
 end
 
 # AS
@@ -46,6 +49,10 @@ group :test do
   # platforms :mri_19, :mri_20 do
   #   gem 'debugger'
   # end
+
+  platforms :mri do
+    gem 'stackprof'
+  end
 
   gem 'benchmark-ips'
 end
