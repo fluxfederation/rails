@@ -1,3 +1,39 @@
+## Rails 4.1.14 (November 12, 2015) ##
+
+*   No longer pass deprecated option `-i` to `pg_dump`.
+
+    *Paul Sadauskas*
+
+*   Includes HABTM returns correct size now. It's caused by the join dependency
+    only instantiates one HABTM object because the join table hasn't a primary key.
+
+    Fixes #16032.
+
+    Examples:
+
+        before:
+
+        Project.first.salaried_developers.size # => 3
+        Project.includes(:salaried_developers).first.salaried_developers.size # => 1
+
+        after:
+
+        Project.first.salaried_developers.size # => 3
+        Project.includes(:salaried_developers).first.salaried_developers.size # => 3
+
+    *Bigxiang*
+
+
+## Rails 4.1.13 (August 24, 2015) ##
+
+*   Don't define autosave association callbacks twice from
+    `accepts_nested_attributes_for`.
+
+    Fixes #18704.
+
+    *Sean Griffin*
+
+
 ## Rails 4.1.12 (June 25, 2015) ##
 
 *   Raises the right exception when declares a has many through

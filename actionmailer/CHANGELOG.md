@@ -1,3 +1,18 @@
+## Rails 4.1.14 (November 12, 2015) ##
+
+*   No changes.
+
+
+## Rails 4.1.14.rc1 (October 30, 2015) ##
+
+*   No changes.
+
+
+## Rails 4.1.13 (August 24, 2015) ##
+
+*   No changes.
+
+
 ## Rails 4.1.12 (June 25, 2015) ##
 
 *   Mailer preview now uses `url_for` to fix links to emails for apps running on

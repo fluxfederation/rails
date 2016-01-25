@@ -1,3 +1,15 @@
+## Rails 4.1.14 (November 12, 2015) ##
+
+*   Fix `mail_to` when called with `nil` as argument.
+
+    *Rafael Mendonça França*
+
+
+## Rails 4.1.13 (August 24, 2015) ##
+
+*   No changes.
+
+
 ## Rails 4.1.12 (June 25, 2015) ##
 
 *   `translate` should handle `raise` flag correctly in case of both main and default

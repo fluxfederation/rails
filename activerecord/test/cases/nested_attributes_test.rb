@@ -161,6 +161,19 @@ class TestNestedAttributesInGeneral < ActiveRecord::TestCase
     assert man.reload.interests.empty?
   end
 
+  def test_reject_if_is_not_short_circuited_if_allow_destroy_is_false
+    Pirate.accepts_nested_attributes_for :ship, reject_if: ->(a) { a[:name] == "The Golden Hind" }, allow_destroy: false
+
+    pirate = Pirate.create!(catchphrase: "Stop wastin' me time", ship_attributes: { name: "White Pearl", _destroy: "1" })
+    assert_equal "White Pearl", pirate.reload.ship.name
+
+    pirate.update!(ship_attributes: { id: pirate.ship.id, name: "The Golden Hind", _destroy: "1" })
+    assert_equal "White Pearl", pirate.reload.ship.name
+
+    pirate.update!(ship_attributes: { id: pirate.ship.id, name: "Black Pearl", _destroy: "1" })
+    assert_equal "Black Pearl", pirate.reload.ship.name
+  end
+
   def test_has_many_association_updating_a_single_record
     Man.accepts_nested_attributes_for(:interests)
     man = Man.create(name: 'John')
@@ -1052,5 +1065,22 @@ class TestHasManyAutosaveAssociationWhichItselfHasAutosaveAssociations < ActiveR
     Ship.create!(:name => "The Black Rock")
     ShipPart.create!(:ship => @ship, :name => "Stern")
     assert_no_queries { @ship.valid? }
+  end
+
+  test "circular references do not perform unnecessary queries" do
+    ship = Ship.new(name: "The Black Rock")
+    part = ship.parts.build(name: "Stern")
+    ship.treasures.build(looter: part)
+
+    assert_queries 3 do
+      ship.save!
+    end
+  end
+
+  test "nested singular associations are validated" do
+    part = ShipPart.new(name: "Stern", ship_attributes: { name: nil })
+
+    assert_not part.valid?
+    assert_equal ["Ship name can't be blank"], part.errors.full_messages
   end
 end
