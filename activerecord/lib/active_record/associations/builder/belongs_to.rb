@@ -54,9 +54,12 @@ module ActiveRecord::Associations::Builder
     def self.add_counter_cache_callbacks(model, reflection)
       cache_column = reflection.counter_cache_column
 
-      model.after_update lambda { |record|
-        record.belongs_to_counter_cache_after_update(reflection)
-      }
+
+      # We continue to see issues with multiple updates being made to counter
+      # cache fields, as noted in #10865.
+      # model.after_update lambda { |record|
+      #   record.belongs_to_counter_cache_after_update(reflection)
+      # }
 
       klass = reflection.class_name.safe_constantize
       klass.attr_readonly cache_column if klass && klass.respond_to?(:attr_readonly)
