@@ -75,11 +75,8 @@ module ActiveRecord
       end
 
       def quoted_date(value)
-        if supports_datetime_with_precision? && value.acts_like?(:time) && value.respond_to?(:usec)
-          "#{super}.#{sprintf("%06d", value.usec)}"
-        else
-          super
-        end
+	# In mainline, this includes microseconds
+        super
       end
 
       #--
