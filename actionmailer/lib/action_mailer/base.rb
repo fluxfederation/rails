@@ -830,7 +830,7 @@ module ActionMailer
       @_mail_was_called = true
 
       create_parts_from_responses(m, responses)
-      wrap_inline_attachments(m)
+      m = wrap_inline_attachments(m) # return the new message structure if it was changed
 
       # Setup content type, reapply charset and handle parts order
       m.content_type = set_content_type(m, content_type, headers[:content_type])
@@ -937,7 +937,7 @@ module ActionMailer
     def wrap_inline_attachments(message)
       # If we have both types of attachment, wrap all the inline attachments
       # in multipart/related, but not the actual attachments
-      return unless message.attachments.detect(&:inline?) && message.attachments.detect { |a| !a.inline? }
+      return message unless message.attachments.detect(&:inline?) && message.attachments.detect { |a| !a.inline? }
       m = Mail.new
       m.header = message.header.to_s
       # copy bcc manually because it is omitted in header.to_s
