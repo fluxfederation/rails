@@ -176,7 +176,11 @@ class BaseTest < ActiveSupport::TestCase
   test "can embed an inline attachment and other attachments" do
     email = BaseMailer.inline_and_other_attachments
     # Need to call #encoded to force the JIT sort on parts
-    email.encoded
+    encoded = email.encoded
+    # This one assert ensures that both parts are present and in the correct order.
+    # It would have failed with original PR#26445 code
+    assert_match(%r{multipart/mixed.*multipart/related}m, encoded)
+
     assert_equal(2, email.parts.length)
     assert_equal("multipart/mixed", email.mime_type)
     assert_equal("multipart/related", email.parts[0].mime_type)

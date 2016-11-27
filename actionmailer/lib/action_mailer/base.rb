@@ -830,7 +830,7 @@ module ActionMailer
       @_mail_was_called = true
 
       create_parts_from_responses(m, responses)
-      m = wrap_inline_attachments(m) # return the new message structure if it was changed
+      wrap_inline_attachments(m)
 
       # Setup content type, reapply charset and handle parts order
       m.content_type = set_content_type(m, content_type, headers[:content_type])
@@ -937,18 +937,22 @@ module ActionMailer
     def wrap_inline_attachments(message)
       # If we have both types of attachment, wrap all the inline attachments
       # in multipart/related, but not the actual attachments
-      return message unless message.attachments.detect(&:inline?) && message.attachments.detect { |a| !a.inline? }
-      m = Mail.new
-      m.header = message.header.to_s
-      # copy bcc manually because it is omitted in header.to_s
-      m.bcc = message.header[:bcc].value if message.header[:bcc]
-      m.content_type = nil
-      related = Mail::Part.new
-      related.content_type = "multipart/related"
-      message.parts.select { |p| !p.attachment? || p.inline? }.each { |p| related.add_part(p) }
-      m.add_part related
-      message.parts.select { |p| p.attachment? && !p.inline? }.each { |p| m.add_part(p) }
-      @_message = m
+      if message.attachments.detect(&:inline?) && message.attachments.detect { |a| !a.inline? }
+        related = Mail::Part.new
+        related.content_type = "multipart/related"
+        mixed = [ related ]
+
+        message.parts.each do |p|
+          if p.attachment? && !p.inline?
+            mixed << p
+          else
+            related.add_part(p)
+          end
+        end
+
+        message.parts.clear
+        mixed.each { |c| message.add_part(c) }
+      end
     end
 
     def insert_part(container, response, charset) #:nodoc:
