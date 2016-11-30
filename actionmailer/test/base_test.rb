@@ -173,6 +173,24 @@ class BaseTest < ActiveSupport::TestCase
     assert_equal("logo.png", email.parts[1].filename)
   end
 
+  test "can embed an inline attachment and other attachments" do
+    email = BaseMailer.inline_and_other_attachments
+    # Need to call #encoded to force the JIT sort on parts
+    encoded = email.encoded
+    # This one assert ensures that both parts are present and in the correct order.
+    # It would have failed with original PR#26445 code
+    assert_match(%r{multipart/mixed.*multipart/related}m, encoded)
+
+    assert_equal(2, email.parts.length)
+    assert_equal("multipart/mixed", email.mime_type)
+    assert_equal("multipart/related", email.parts[0].mime_type)
+    assert_equal("multipart/alternative", email.parts[0].parts[0].mime_type)
+    assert_equal("text/plain", email.parts[0].parts[0].parts[0].mime_type)
+    assert_equal("text/html",  email.parts[0].parts[0].parts[1].mime_type)
+    assert_equal("logo.png", email.parts[0].parts[1].filename)
+    assert_equal("certificate.pdf", email.parts[1].filename)
+  end
+
   # Defaults values
   test "uses default charset from class" do
     with_default BaseMailer, charset: "US-ASCII" do
