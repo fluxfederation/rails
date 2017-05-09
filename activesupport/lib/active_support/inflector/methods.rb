@@ -400,12 +400,17 @@ module ActiveSupport
       def apply_inflections(word, method, locale = :en)
         result = word.to_s.dup
 
-        if word.empty? || inflections(locale).uncountables.uncountable?(result)
-          result
-        else
-          inflections(locale).send(method).each { |(rule, replacement)| break if result.sub!(rule, replacement) }
-          result
+        fallbacks = I18n.respond_to?(:fallbacks) ? I18n.fallbacks[locale] : [locale]
+
+        fallbacks.each do |fallback|
+          if word.empty? || inflections(fallback).uncountables.uncountable?(result)
+            return result
+          else
+            inflections(fallback).send(method).each { |(rule, replacement)| return result if result.sub!(rule, replacement) }
+          end
         end
+
+        result
       end
   end
 end
