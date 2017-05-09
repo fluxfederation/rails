@@ -745,6 +745,13 @@ class DirtyTest < ActiveRecord::TestCase
     assert person.changed?
   end
 
+  test "attributes not selected are still missing after save" do
+    person = Person.select(:id).first
+    assert_raises(ActiveModel::MissingAttributeError) { person.first_name }
+    assert person.save # calls forget_attribute_assignments
+    assert_raises(ActiveModel::MissingAttributeError) { person.first_name }
+  end
+
   private
     def with_partial_writes(klass, on = true)
       old = klass.partial_writes?

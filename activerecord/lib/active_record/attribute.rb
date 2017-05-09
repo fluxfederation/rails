@@ -207,6 +207,10 @@ module ActiveRecord
       def initialized?
         false
       end
+
+      def forgetting_assignment
+        dup
+      end
     end
     private_constant :FromDatabase, :FromUser, :Null, :Uninitialized, :WithCastValue
   end
