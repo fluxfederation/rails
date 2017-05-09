@@ -234,6 +234,10 @@ module ActiveRecord
         def with_type(type)
           self.class.new(name, type)
         end
+
+        def forgetting_assignment
+          dup
+        end
       end
       private_constant :FromDatabase, :FromUser, :Null, :Uninitialized, :WithCastValue
   end
