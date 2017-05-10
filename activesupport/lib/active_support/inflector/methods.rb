@@ -403,11 +403,9 @@ module ActiveSupport
         fallbacks = I18n.respond_to?(:fallbacks) ? I18n.fallbacks[locale] : [locale]
 
         fallbacks.each do |fallback|
-          if word.empty? || inflections(fallback).uncountables.uncountable?(result)
-            return result
-          else
-            inflections(fallback).send(method).each { |(rule, replacement)| return result if result.sub!(rule, replacement) }
-          end
+          return result if word.empty? || inflections(fallback).uncountables.uncountable?(result)
+
+          inflections(fallback).send(method).each { |(rule, replacement)| return result if result.sub!(rule, replacement) }
         end
 
         result
