@@ -39,7 +39,7 @@ PATH
     actionpack (5.2.2.1)
       actionview (= 5.2.2.1)
       activesupport (= 5.2.2.1)
-      rack (~> 2.0)
+      rack (~> 2.0, >= 2.0.8)
       rack-test (>= 0.6.3)
       rails-dom-testing (~> 2.0)
       rails-html-sanitizer (~> 1.0, >= 1.0.2)
@@ -354,10 +354,10 @@ GEM
     qunit-selenium (0.0.4)
       selenium-webdriver
       thor
-    raabro (1.1.5)
-    racc (1.4.14)
-    rack (2.0.5)
-    rack-cache (1.7.2)
+    raabro (1.1.6)
+    racc (1.4.15)
+    rack (2.0.8)
+    rack-cache (1.10.0)
       rack (>= 0.4)
     rack-protection (2.0.1)
       rack
